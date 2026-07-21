@@ -19,21 +19,56 @@ const itemSchema = new mongoose.Schema(
     category: {
       type: String,
       enum: [
-        'Pizza',
+        // Pakistani
+        'Biryani & Pulao',
+        'Karahi & Handi',
+        'Nihari & Paya',
+
+        // BBQ
+        'BBQ & Grill',
+        'Tikka & Kebabs',
+
+        // Fast Food
         'Burgers',
-        'Sushi',
-        'Pasta',
-        'Salads',
-        'Desserts',
-        'Beverages',
-        'Appetizers',
-        'Main Course',
+        'Pizza',
+        'Shawarma',
+        'Broast & Fried Chicken',
+        'Rolls & Wraps',
+
+        // Breakfast
+        'Paratha & Breakfast',
+
+        // Street Food
         'Street Food',
-        'BBQ',
-        'Seafood',
-        'Breakfast',
-        'Fast Food',
+        'Chaat & Snacks',
+
+        // International
+        'Chinese',
+        'Indian',
+        'Asian',
+        'Arabian',
+
+        // Desserts
+        'Desserts & Sweets',
+        'Ice Cream',
+        'Bakery',
+
+        // Beverages
+        'Tea & Coffee',
+        'Beverages',
+        'Juices & Shakes',
+        'Drink',
+
+        // Health
+        'Healthy Food',
+
+        // Homemade
+        'Home Made Food',
       ],
+    },
+    embedding: {
+      type: [Number],
+      default: [],
     },
 
     isAvailable: {
@@ -43,5 +78,9 @@ const itemSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
+itemSchema.index({
+  name: 'text',
+  description: 'text',
+  category: 'text',
+});
 export const item = mongoose.model('Item', itemSchema);

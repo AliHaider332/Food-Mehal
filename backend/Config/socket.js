@@ -25,7 +25,6 @@ io.on('connection', (socket) => {
   LiveTraffic[userID] = socket.id;
   socket.on("live-location",(data)=>{
     const {user,orderId,location}=data
-   
     if(LiveTraffic[user]){
       io.to(LiveTraffic[user]).emit('receive-live-location', {
         location,
@@ -33,10 +32,10 @@ io.on('connection', (socket) => {
       });
     }
   })
-  
+
   console.log('Connected:', userID);
   console.log(Object.keys(LiveTraffic).length);
- 
+
 
   socket.on('disconnect', () => {
     delete LiveTraffic[userID];

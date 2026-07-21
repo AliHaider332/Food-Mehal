@@ -31,58 +31,77 @@ const itemSchema = z.object({
   discount: z
     .number()
     .min(0, 'Discount must be 0 or more')
-    .max(500, 'Discount cannot exceed 100%'),
+    .max(100, 'Discount cannot exceed 100%'),
   category: z.string().min(1, 'Please select a category'),
   description: z
     .string()
     .min(5, 'Please provide a description')
-    .max(200, 'Description too long'),
+    .max(500, 'Description too long'),
   picture: z.any().optional(),
   isAvailable: z.boolean().default(true),
 });
 
+// All categories as a flat array (no groups)
 const categories = [
-  { name: 'Pizza', group: 'Main Course' },
-  { name: 'Burgers', group: 'Fast Food' },
-  { name: 'Sushi', group: 'Seafood' },
-  { name: 'Pasta', group: 'Main Course' },
-  { name: 'Salads', group: 'Healthy' },
-  { name: 'Desserts', group: 'Desserts' },
-  { name: 'Beverages', group: 'Beverages' },
-  { name: 'Appetizers', group: 'Starters' },
-  { name: 'Main Course', group: 'Main Course' },
-  { name: 'Street Food', group: 'Street Food' },
-  { name: 'BBQ', group: 'BBQ' },
-  { name: 'Seafood', group: 'Seafood' },
-  { name: 'Breakfast', group: 'Breakfast' },
-  { name: 'Fast Food', group: 'Fast Food' },
+  // Pakistani
+  'Biryani & Pulao',
+  'Karahi & Handi',
+  'Nihari & Paya',
+
+  // BBQ
+  'BBQ & Grill',
+  'Tikka & Kebabs',
+
+  // Fast Food
+  'Burgers',
+  'Pizza',
+  'Shawarma',
+  'Broast & Fried Chicken',
+  'Rolls & Wraps',
+
+  // Breakfast
+  'Paratha & Breakfast',
+
+  // Street Food
+  'Street Food',
+  'Chaat & Snacks',
+
+  // International
+  'Chinese',
+  'Indian',
+  'Asian',
+  'Arabian',
+
+  // Desserts
+  'Desserts & Sweets',
+  'Ice Cream',
+  'Bakery',
+
+  // Beverages
+  'Tea & Coffee',
+  'Beverages',
+  'Juices & Shakes',
+  'Drink',
+
+  // Health
+  'Healthy Food',
+
+  // Homemade
+  'Home Made Food',
 ];
 
-// Professional Custom Category Dropdown Component
+// Professional Custom Category Dropdown Component (Simplified)
 const CustomCategorySelect = ({ value, onChange, error }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
 
-  const selectedCategory = categories.find((cat) => cat.name === value);
-
-  // Group categories
-  const groupedCategories = categories.reduce((acc, cat) => {
-    if (!acc[cat.group]) acc[cat.group] = [];
-    acc[cat.group].push(cat);
-    return acc;
-  }, {});
-
   // Filter categories based on search
-  const filteredGroups = searchTerm
-    ? Object.keys(groupedCategories).reduce((acc, group) => {
-        const filtered = groupedCategories[group].filter((cat) =>
-          cat.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        if (filtered.length) acc[group] = filtered;
-        return acc;
-      }, {})
-    : groupedCategories;
+  const filteredCategories = searchTerm
+    ? categories.filter((cat) =>
+        cat.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : categories;
 
   const handleSelect = (category) => {
     onChange(category);
@@ -115,14 +134,8 @@ const CustomCategorySelect = ({ value, onChange, error }) => {
         }`}
       >
         <div className="flex items-center gap-2">
-          {selectedCategory ? (
-            <>
-              {/* <span className="text-xl">{selectedCategory.icon}</span> */}
-              <span className="text-gray-700">{selectedCategory.name}</span>
-              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                {selectedCategory.group}
-              </span>
-            </>
+          {value ? (
+            <span className="text-gray-700">{value}</span>
           ) : (
             <span className="text-gray-400">Select a category...</span>
           )}
@@ -154,43 +167,25 @@ const CustomCategorySelect = ({ value, onChange, error }) => {
 
           {/* Categories List */}
           <div className="max-h-80 overflow-y-auto">
-            {Object.keys(filteredGroups).length === 0 ? (
+            {filteredCategories.length === 0 ? (
               <div className="p-4 text-center text-gray-400 text-sm">
                 No categories found
               </div>
             ) : (
-              Object.entries(filteredGroups).map(([group, cats]) => (
-                <div key={group}>
-                  {/* Group Header */}
-                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      {group}
-                    </span>
-                  </div>
-
-                  {/* Group Items */}
-                  {cats.map((cat) => (
-                    <div
-                      key={cat.name}
-                      onClick={() => handleSelect(cat.name)}
-                      className={`px-3 py-2.5 flex items-center gap-3 cursor-pointer transition-all duration-150 ${
-                        value === cat.name
-                          ? 'bg-orange-50 text-orange-600'
-                          : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      {/* <span className="text-xl">{cat.icon}</span> */}
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-700">
-                          {cat.name}
-                        </div>
-                        <div className="text-xs text-gray-400">{cat.group}</div>
-                      </div>
-                      {value === cat.name && (
-                        <FaCheckCircle className="text-orange-500 text-sm" />
-                      )}
-                    </div>
-                  ))}
+              filteredCategories.map((cat) => (
+                <div
+                  key={cat}
+                  onClick={() => handleSelect(cat)}
+                  className={`px-4 py-3 flex items-center justify-between cursor-pointer transition-all duration-150 ${
+                    value === cat
+                      ? 'bg-orange-50 text-orange-600'
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="text-sm font-medium">{cat}</span>
+                  {value === cat && (
+                    <FaCheckCircle className="text-orange-500 text-sm" />
+                  )}
                 </div>
               ))
             )}
@@ -233,7 +228,7 @@ const SellerItemForm = ({
       name: '',
       price: 0,
       discount: 0,
-      category: categories[0].name,
+      category: categories[0],
       description: '',
       picture: '',
       isAvailable: true,
@@ -250,14 +245,15 @@ const SellerItemForm = ({
   const discountedPrice = price - (price * discount) / 100;
   const hasDiscount = discount > 0;
   const savings = price - discountedPrice;
-  //Load the editing data
+
+  // Load the editing data
   useEffect(() => {
     if (isEditing && editData) {
       reset({
         name: editData.name || '',
         price: editData.price || 0,
         discount: editData.discount || 0,
-        category: editData.category || categories[0].name,
+        category: editData.category || categories[0],
         description: editData.description || '',
         picture: editData.picture || '',
         isAvailable:
@@ -301,8 +297,6 @@ const SellerItemForm = ({
     setValue('isAvailable', !isAvailable);
   };
 
-  
-
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
@@ -319,11 +313,8 @@ const SellerItemForm = ({
 
       let response;
       if (isEditing) {
-        
-        
         response = await updateItem({ data: formData, id: editData?._id });
-        
-        
+
         if (response.data.success) {
           toast.success('Item updated successfully!');
         }
@@ -688,7 +679,7 @@ const SellerItemForm = ({
             {isSubmitting ? (
               <div className="relative z-10 flex items-center justify-center gap-2">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Saving... </span>
+                <span>Saving...</span>
               </div>
             ) : (
               <span className="relative z-10">

@@ -1,13 +1,7 @@
 // Components/Cart/CustomerCartOrderSummaryCard.jsx
 import React from 'react';
-import {
-  FaShoppingBag,
-  FaTruck,
-  FaGift,
-  FaMapMarkerAlt,
-  FaCreditCard,
-} from 'react-icons/fa';
-import { formatPKR } from '../../../utils/cartutils';
+import { FaShoppingBag, FaTruck, FaGift, FaMapMarkerAlt, FaCreditCard } from 'react-icons/fa';
+import { formatPKR } from '../../../utils/cartUtils';
 
 const CustomerCartOrderSummaryCard = ({
   totalItems,
@@ -22,6 +16,7 @@ const CustomerCartOrderSummaryCard = ({
     top: 0,
     behavior: 'smooth',
   });
+
   return (
     <div className="bg-white rounded-3xl shadow-xl overflow-hidden sticky top-8">
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-5">
@@ -29,22 +24,18 @@ const CustomerCartOrderSummaryCard = ({
           <FaShoppingBag className="text-orange-400" />
           Order Summary
         </h3>
-        <p className="text-gray-400 text-sm mt-1">
-          Review your order before placing
-        </p>
+        <p className="text-gray-400 text-sm mt-1">Review your order before placing</p>
       </div>
 
       {/* Scrollable content with custom scrollbar */}
       <div
-        className="custom-scrollbar"
+        className="custom-scrollbar order-summary-scroll"
         style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}
       >
         <div className="p-6 space-y-4">
           <div className="space-y-3 border-b border-gray-100 pb-4">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">
-                Subtotal ({totalItems} items)
-              </span>
+              <span className="text-gray-600">Subtotal ({totalItems} items)</span>
               <span className="font-semibold">{formatPKR(subtotal)} PKR</span>
             </div>
             {totalSavings > 0 && (
@@ -52,18 +43,14 @@ const CustomerCartOrderSummaryCard = ({
                 <span className="flex items-center gap-1">
                   <FaGift /> Total Savings
                 </span>
-                <span className="font-bold">
-                  -{formatPKR(totalSavings)} PKR
-                </span>
+                <span className="font-bold">-{formatPKR(totalSavings)} PKR</span>
               </div>
             )}
             <div className="flex justify-between items-center">
               <span className="flex items-center gap-1 text-gray-600">
                 <FaTruck /> Delivery Fee
               </span>
-              <span className="font-semibold">
-                {formatPKR(totalDelivery)} PKR
-              </span>
+              <span className="font-semibold">{formatPKR(totalDelivery)} PKR</span>
             </div>
           </div>
 
@@ -88,12 +75,9 @@ const CustomerCartOrderSummaryCard = ({
 
           {/* Delivery Instructions */}
           <div className="bg-blue-50 rounded-xl p-4">
-            <p className="text-xs font-semibold text-blue-700 mb-2">
-              Delivery Instructions
-            </p>
+            <p className="text-xs font-semibold text-blue-700 mb-2">Delivery Instructions</p>
             <p className="text-xs text-gray-600">
-              Please ensure you have exact change. Our delivery partner will
-              call you upon arrival.
+              Please ensure you have exact change. Our delivery partner will call you upon arrival.
             </p>
           </div>
         </div>
@@ -113,6 +97,52 @@ const CustomerCartOrderSummaryCard = ({
           <span>Cash on Delivery only</span>
         </div>
       </div>
+
+      {/* Custom Scrollbar Styles */}
+      <style >{`
+        /* For Webkit browsers (Chrome, Safari, Edge) */
+        .order-summary-scroll::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+
+        .order-summary-scroll::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+          margin: 4px 0;
+        }
+
+        .order-summary-scroll::-webkit-scrollbar-thumb {
+          background: linear-gradient(to bottom, #f97316, #ea580c);
+          border-radius: 10px;
+          transition: all 0.3s ease;
+        }
+
+        .order-summary-scroll::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(to bottom, #ea580c, #c2410c);
+          transform: scale(1.1);
+        }
+
+        .order-summary-scroll::-webkit-scrollbar-thumb:active {
+          background: linear-gradient(to bottom, #c2410c, #9a3412);
+        }
+
+        /* For Firefox */
+        .order-summary-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #f97316 #f1f1f1;
+        }
+
+        /* For Firefox hover state */
+        .order-summary-scroll:hover {
+          scrollbar-color: #ea580c #f1f1f1;
+        }
+
+        /* For Internet Explorer and Edge */
+        .order-summary-scroll {
+          -ms-overflow-style: -ms-autohiding-scrollbar;
+        }
+      `}</style>
     </div>
   );
 };

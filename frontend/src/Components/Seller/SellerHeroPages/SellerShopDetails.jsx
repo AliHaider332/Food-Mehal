@@ -99,7 +99,7 @@ const SellerShopDetails = ({ onEdit, shopData }) => {
   const statusInfo = getStatusInfo();
 
   return (
-    <div className="w-full bg-white rounded-3xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
+    <div className="w-full  rounded-3xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
       {/* Header with gradient */}
       <div className="relative px-6 py-6 md:px-8 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 overflow-hidden">
         <div className="absolute inset-0 bg-white opacity-10"></div>

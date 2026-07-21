@@ -1,9 +1,9 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 // CustomerFavorite.jsx - Main Component
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { clearAllFavorites } from '../../../Store/user/user.favorite.item.slice';
+
 import useFavorite from '../../../hooks/useFavorite';
 import useCart from '../../../hooks/useCart';
 import ComponentLoading from '../../ComponentLoading';
@@ -12,44 +12,36 @@ import CustomerFavoriteHeader from './CustomerFavoriteHeader';
 import CustomerEmptyFavorite from './CustomerEmptyFavorite';
 import CustomerFavoriteGrid from './CustomerFavoriteGrid';
 
-// utils
-import {
-  getCartQuantityMap,
-  getIsInCartMap,
-} from '../../../utils/favoriteUtils';
 import { FaHeart } from 'react-icons/fa';
+import { useGetFavoriteQuery } from '../../../services/customer.api';
 
 const CustomerFavorite = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { items: favoriteItems, loading } = useSelector(
-    (state) => state.favorites
-  );
-  const { removeFromFavorites } = useFavorite();
-  const { addToCart, updateQuantity, getItemQuantity, isInCart } = useCart();
+  // console.log({ data, isLoading, error });
+  const { data, isLoading: loading } = useGetFavoriteQuery();
 
-  const [removingId, setRemovingId] = useState(null);
+  const favoriteItems = data?.data || [];
+
+  const { toggleFavorite } = useFavorite();
+  const { addToCart, updateQuantity } = useCart();
+
   const [addingToCartId, setAddingToCartId] = useState(null);
 
   const handleRemoveFromFavorites = (id, e) => {
     e.stopPropagation();
-    setRemovingId(id);
-    removeFromFavorites(id, e);
-    toast.success('Removed from favorites');
-    setRemovingId(null);
+    toggleFavorite(id);
   };
 
   const handleClearAllFavorites = () => {
     if (window.confirm('Are you sure you want to remove all favorites?')) {
-      dispatch(clearAllFavorites());
       toast.success('All favorites removed');
     }
   };
 
-  const handleAddToCart = (item, quantity = 1, e) => {
+  const handleAddToCart = (item, e) => {
     e?.stopPropagation();
     setAddingToCartId(item._id);
-    addToCart(item, quantity);
+    addToCart(item._id);
     setTimeout(() => setAddingToCartId(null), 300);
   };
 
@@ -57,35 +49,27 @@ const CustomerFavorite = () => {
     e?.stopPropagation();
     setAddingToCartId(item._id);
     updateQuantity(item._id, delta, true);
-    setTimeout(() => setAddingToCartId(null), 300);
+    setAddingToCartId(null);
   };
 
   const handleItemClick = (itemId, e) => {
     // Don't navigate if clicking on buttons
     if (e.target.closest('button')) return;
-    navigate(`/user/item/${itemId}`);
+    navigate(`/customer/item/${itemId}`);
   };
 
   const totalFavorites = favoriteItems?.length || 0;
-
-  // Precompute cart data for all items
-  const cartQuantities = getCartQuantityMap(favoriteItems, getItemQuantity);
-  const isInCartMap = getIsInCartMap(favoriteItems, isInCart);
 
   if (loading) {
     return <ComponentLoading />;
   }
 
   if (totalFavorites === 0) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 favorite-scrollbar">
-        <CustomerEmptyFavorite />
-      </div>
-    );
+    return <CustomerEmptyFavorite />;
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 favorite-scrollbar">
+    <div className="max-w-7xl mx-auto px-4 py-8">
       <CustomerFavoriteHeader
         totalFavorites={totalFavorites}
         onClearAll={handleClearAllFavorites}
@@ -95,13 +79,11 @@ const CustomerFavorite = () => {
           <FaHeart className="text-orange-500" />
           My Favorite
         </h2>
+        <p className="text-gray-500 mt-2">{totalFavorites} items</p>
       </div>
 
       <CustomerFavoriteGrid
         items={favoriteItems}
-        cartQuantities={cartQuantities}
-        isInCartMap={isInCartMap}
-        removingId={removingId}
         addingToCartId={addingToCartId}
         onRemove={handleRemoveFromFavorites}
         onAddToCart={handleAddToCart}

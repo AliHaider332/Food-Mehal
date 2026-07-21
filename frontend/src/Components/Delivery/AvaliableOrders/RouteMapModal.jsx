@@ -1,7 +1,7 @@
 import React, { memo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { formatOrderId } from '../../../utils/deliveryUtils';
-import DynamicTrackingMap from '../../DynamicTrackingMap';
+import DeliverySideOrderTracking from '../../DeliverySideOrderTracking';
 import {
   FiMap,
   FiX,
@@ -148,13 +148,11 @@ const RouteMapModal = memo(({ isOpen, order, onClose }) => {
                   </div>
                 </div>
               )}
-              <DynamicTrackingMap
+              <DeliverySideOrderTracking
                 shopLocation={order.shop.location}
                 deliveryLocation={order.deliveryLocation}
                 deliveryBoyLocation={deliveryBoyLocation}
                 status="delivery-accepted"
-                isCustomerView={false}
-                onLoad={() => setMapLoading(false)}
               />
             </div>
           </div>
@@ -201,7 +199,7 @@ const RouteMapModal = memo(({ isOpen, order, onClose }) => {
                   <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide">
                     Your Current Location
                   </p>
-                 
+
                   <p className="text-xs text-gray-500 mt-1">
                     {deliveryBoyLocation?.address}
                   </p>

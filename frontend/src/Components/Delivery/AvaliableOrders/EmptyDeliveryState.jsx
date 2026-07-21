@@ -6,8 +6,7 @@ import { useDeliveryActions } from '../../hooks/useDeliveryActions';
 import {
   formatDateTime,
   getOrderStatusConfig,
-} from '../../../utils/deliveryutils';
-import DynamicTrackingMap from '../../DynamicTrackingMap';
+} from '../../../utils/deliveryUtils';
 import OrderTimeline from './OrderTimeline';
 import OrderSummary from './OrderSummary';
 import LocationInfo from './LocationInfo';
@@ -15,6 +14,7 @@ import ActionCard from './ActionCard';
 import PickOrderModal from './PickOrderModal';
 import MapModal from './MapModal';
 import EmptyDeliveryState from './EmptyDeliveryState';
+import DeliverySideOrderTracking from '../../DeliverySideOrderTracking';
 
 const DeliveryLiveOrder = ({ order }) => {
   const { user } = useSelector((state) => state.auth);
@@ -111,7 +111,7 @@ const DeliveryLiveOrder = ({ order }) => {
               </div>
             </div>
             <div className="p-4">
-              <DynamicTrackingMap
+              <DeliverySideOrderTracking
                 shopLocation={shopLocation}
                 deliveryLocation={deliveryLocation}
                 deliveryBoyLocation={deliveryBoyLocation}

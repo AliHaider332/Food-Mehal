@@ -23,10 +23,10 @@ import CustomerOrder from '../Components/Customer/Order/CustomerOrder';
 import CustomerFavorite from '../Components/Customer/Favorite/CustomerFavorite';
 import CustomerCart from '../Components/Customer/Cart/CustomerCart';
 
-import CustomerViewAllItems from '../Components/Customer/CustomerViewAllItems';
+import CustomerViewAllItems from '../Components/Customer/ViewAllItems/CustomerViewAllItems';
 import CustomerSingleShop from '../Components/Customer/CustomerSingleShop';
 import DeliveryMain from '../Components/Delivery/DeliveryMain';
-import CustomerSingleItem from '../Components/Customer/CustomerSingleItem';
+import CustomerSingleItem from '../Components/Customer/SingleItem/CustomerSingleItem';
 import OrderHistory from '../Components/Delivery/OrdersHistory/OrderHistory';
 import { useGetShopQuery } from '../services/shop.api';
 

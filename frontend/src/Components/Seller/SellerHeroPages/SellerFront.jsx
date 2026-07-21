@@ -30,7 +30,7 @@ const SellerFront = () => {
 
   // If shop info exists, show dashboard
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="flex justify-between items-center flex-wrap gap-4 mb-6">
@@ -39,9 +39,7 @@ const SellerFront = () => {
               <FaStore className="text-orange-500 mr-3 text-3xl" />
               Shop Dashboard
             </h2>
-            <p className="text-gray-500 mt-1 text-sm">
-              Manage your restaurant profile and details
-            </p>
+            <p className="text-gray-500 mt-1 text-sm">Manage your restaurant profile and details</p>
           </div>
         </div>
 
@@ -50,10 +48,7 @@ const SellerFront = () => {
           {!isEditingShop ? (
             <SellerShopDetails onEdit={handleEditShop} shopData={data?.shop} />
           ) : (
-            <ShopEditForm
-              onCancel={handleCancelEditShop}
-              shopData={data?.shop}
-            />
+            <ShopEditForm onCancel={handleCancelEditShop} shopData={data?.shop} />
           )}
         </div>
 

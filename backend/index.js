@@ -24,7 +24,7 @@ app.use(cookieParser());
 
 app.use('/api/auth', authRouter);
 app.use('/api/shop', shopRouter);
-app.use('/api/user', userRouter);
+app.use('/api/customer', userRouter);
 app.use('/api/delivery', deliveryRouter);
 app.use(CatchError);
 

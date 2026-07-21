@@ -16,35 +16,33 @@ import {
   formatPKR,
   getDiscountedPrice,
   calculateSavings,
-} from '../../../utils/favoriteutils';
+} from '../../../utils/favoriteUtils';
 import { useNavigate } from 'react-router-dom';
+import { getAverageRating } from '../RenderStarts';
 
 const CustomerFavoriteItemCard = ({
   item,
   cartQuantity,
   isInCart,
-  isRemoving,
   isAddingToCart,
   onRemove,
   onAddToCart,
   onUpdateQuantity,
+  onRemoveFromCart, // Add this new prop
 }) => {
   const navigate = useNavigate();
   const [showQuantitySelector, setShowQuantitySelector] = useState(false);
   const discountedPrice = getDiscountedPrice(item);
   const savings = calculateSavings(item);
-  const getAverageRating = (shop) => {
-    if (!shop.reviews || shop.reviews.length === 0) return 0;
-    const total = shop.reviews.reduce((sum, review) => sum + review.rating, 0);
-    return (total / shop.reviews.length).toFixed(1);
-  };
+  
+  
 
   const handleAddClick = (e) => {
     e.stopPropagation();
     if (isInCart) {
       setShowQuantitySelector(true);
     } else {
-      onAddToCart(item, 1, e);
+      onAddToCart(item, e);
     }
   };
 
@@ -53,11 +51,19 @@ const CustomerFavoriteItemCard = ({
     onUpdateQuantity(item, delta, e);
   };
 
-  const handleCloseSelector = (e) => {
+ 
+
+  // New function to handle removing item from cart
+  const handleRemoveFromCart = (e) => {
     e.stopPropagation();
+    if (onRemoveFromCart) {
+      onRemoveFromCart(item, e);
+    } else {
+      // Fallback: use onUpdateQuantity to set quantity to 0
+      onUpdateQuantity(item, -cartQuantity, e);
+    }
     setShowQuantitySelector(false);
   };
-
   return (
     <div
       onClick={() => {
@@ -84,14 +90,9 @@ const CustomerFavoriteItemCard = ({
         {/* Remove from Favorites Button */}
         <button
           onClick={(e) => onRemove(item._id, e)}
-          disabled={isRemoving}
           className="absolute top-3 right-3 bg-white/90 hover:bg-white p-2 rounded-full transition-all duration-200 hover:scale-110 disabled:opacity-50 z-10"
         >
-          {isRemoving ? (
-            <FaSpinner className="text-red-500 text-lg animate-spin" />
-          ) : (
-            <FaHeart className="text-red-500 text-lg" />
-          )}
+          <FaHeart className="text-red-500 text-lg" />
         </button>
 
         {/* Cart Status Badge */}
@@ -172,8 +173,9 @@ const CustomerFavoriteItemCard = ({
                 <FaPlus className="text-xs" />
               </button>
               <button
-                onClick={handleCloseSelector}
+                onClick={handleRemoveFromCart} // Changed from handleCloseSelector
                 className="w-8 h-8 flex items-center justify-center bg-red-50 rounded-lg hover:bg-red-100 text-red-600 transition-colors"
+                title="Remove from cart"
               >
                 <FaTrash className="text-xs" />
               </button>

@@ -14,7 +14,6 @@ export const deliveryApi = createApi({
     // GET SHOP
     getLiveOrder: builder.query({
       query: () => '/delivery/get-order',
-
       providesTags: ['liveOrder'],
     }),
     acceptOrder: builder.mutation({

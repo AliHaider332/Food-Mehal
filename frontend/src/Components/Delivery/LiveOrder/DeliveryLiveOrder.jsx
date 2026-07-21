@@ -1,13 +1,9 @@
 // DeliveryLiveOrder.jsx (Fixed)
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaMotorcycle } from 'react-icons/fa';
+import { FaLocationArrow, FaMotorcycle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import {
-  formatDateTime,
-  getOrderStatusConfig,
-} from '../../../utils/deliveryUtils';
-import DynamicTrackingMap from '../../DynamicTrackingMap';
+import { formatDateTime, getOrderStatusConfig } from '../../../utils/deliveryUtils';
 import OrderTimeline from './OrderTimeline';
 import OrderSummary from './OrderSummary';
 import LocationInfo from './LocationInfo';
@@ -16,6 +12,8 @@ import ActionCard from './ActionCard';
 import { setCoordinates } from '../../../Store/auth/auth.slice';
 import { getSocket } from '../../../Config/socket';
 import { useUpdateOrderMutation } from '../../../services/delivery.api';
+import DeliverySideOrderTracking from '../../DeliverySideOrderTracking';
+import { MdOutlineDeliveryDining } from 'react-icons/md';
 
 const DeliveryLiveOrder = ({ order }) => {
   const dispatch = useDispatch();
@@ -24,10 +22,7 @@ const DeliveryLiveOrder = ({ order }) => {
   // FIXED: Use array destructuring instead of object destructuring
   const [loading, setLoading] = useState(false);
   const [showPickModal, setShowPickModal] = useState(false);
-  const [routeStats, setRouteStats] = useState(null);
-  const [currentStatus, setCurrentStatus] = useState(
-    order?.status || 'accepted'
-  );
+  const [currentStatus, setCurrentStatus] = useState(order?.status || 'accepted');
   const [locationError, setLocationError] = useState(null);
 
   const statusConfig = getOrderStatusConfig(currentStatus);
@@ -104,7 +99,7 @@ const DeliveryLiveOrder = ({ order }) => {
 
     let watchId;
     let lastEmittedLocation = null;
-    const EMIT_INTERVAL = 5000; // Emit every 5 seconds
+    const EMIT_INTERVAL = 3000; // Emit every 5 seconds
 
     const startTracking = () => {
       watchId = navigator.geolocation.watchPosition(
@@ -119,11 +114,10 @@ const DeliveryLiveOrder = ({ order }) => {
 
           // Throttle location emissions
           const now = Date.now();
-          if (
-            !lastEmittedLocation ||
-            now - lastEmittedLocation.timestamp >= EMIT_INTERVAL
-          ) {
+          if (!lastEmittedLocation || now - lastEmittedLocation.timestamp >= EMIT_INTERVAL) {
             const socket = getSocket();
+            console.log('Location is emmited');
+
             socket.emit('live-location', {
               user: order.user,
               orderId: order._id,
@@ -141,21 +135,6 @@ const DeliveryLiveOrder = ({ order }) => {
         },
         (error) => {
           console.error('Geolocation error:', error);
-          let errorMessage = 'Unable to get your location. ';
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage += 'Please enable location permissions.';
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage += 'Location information is unavailable.';
-              break;
-            case error.TIMEOUT:
-              errorMessage += 'Location request timed out.';
-              break;
-            default:
-              errorMessage += 'Please check your GPS settings.';
-          }
-          setLocationError(errorMessage);
           toast.warning(errorMessage);
         },
         {
@@ -182,9 +161,7 @@ const DeliveryLiveOrder = ({ order }) => {
           <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <FaMotorcycle className="w-8 h-8 text-yellow-600" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-800">
-            No Order Found
-          </h3>
+          <h3 className="text-xl font-semibold text-gray-800">No Order Found</h3>
           <p className="text-gray-500 mt-2">Please select an order to track</p>
         </div>
       </div>
@@ -208,8 +185,7 @@ const DeliveryLiveOrder = ({ order }) => {
               </div>
               <div className="flex flex-wrap items-center gap-3 mt-2">
                 <p className="text-gray-500 text-sm">
-                  Order #{order._id?.slice(-8)} •{' '}
-                  {formatDateTime(order.createdAt)}
+                  Order #{order._id?.slice(-8)} • {formatDateTime(order.createdAt)}
                 </p>
               </div>
             </div>
@@ -226,9 +202,7 @@ const DeliveryLiveOrder = ({ order }) => {
                 }`}
               />
               <span
-                className={`text-sm font-semibold ${
-                  statusConfig.textColor || 'text-blue-700'
-                }`}
+                className={`text-sm font-semibold ${statusConfig.textColor || 'text-blue-700'}`}
               >
                 {statusConfig.trackingMessage || currentStatus.toUpperCase()}
               </span>
@@ -240,9 +214,7 @@ const DeliveryLiveOrder = ({ order }) => {
             <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start gap-2">
               <div className="w-5 h-5 text-yellow-600 flex-shrink-0">⚠️</div>
               <div>
-                <p className="text-sm text-yellow-800 font-medium">
-                  Location Warning
-                </p>
+                <p className="text-sm text-yellow-800 font-medium">Location Warning</p>
                 <p className="text-xs text-yellow-700">{locationError}</p>
               </div>
             </div>
@@ -256,9 +228,7 @@ const DeliveryLiveOrder = ({ order }) => {
             <OrderSummary order={order} />
             <LocationInfo
               shop={order.shop}
-              deliveryLocation={
-                order?.deliveryLocation?.address || 'Delivery Address'
-              }
+              deliveryLocation={order?.deliveryLocation?.address || 'Delivery Address'}
             />
           </div>
 
@@ -268,20 +238,18 @@ const DeliveryLiveOrder = ({ order }) => {
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
               <div className="p-4 bg-gradient-to-r from-gray-50 to-white border-b">
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                  📍 Live Tracking Map
+                  <MdOutlineDeliveryDining /> Live Tracking Map
                 </h3>
                 <p className="text-xs text-gray-500 mt-1">
                   Real-time location updates every 5 seconds
                 </p>
               </div>
               <div className="p-4">
-                <DynamicTrackingMap
+                <DeliverySideOrderTracking
                   shopLocation={shopLocation}
                   deliveryLocation={deliveryLocation}
                   deliveryBoyLocation={deliveryBoyLocation}
                   status={currentStatus}
-                  routeStats={routeStats}
-                  onRouteCalculated={setRouteStats}
                 />
               </div>
             </div>
@@ -311,3 +279,14 @@ const DeliveryLiveOrder = ({ order }) => {
 };
 
 export default DeliveryLiveOrder;
+
+{
+  /* <DynamicTrackingMap
+                  shopLocation={shopLocation}
+                  deliveryLocation={deliveryLocation}
+                  deliveryBoyLocation={deliveryBoyLocation}
+                  status={currentStatus}
+                  routeStats={routeStats}
+                  onRouteCalculated={setRouteStats}
+                /> */
+}

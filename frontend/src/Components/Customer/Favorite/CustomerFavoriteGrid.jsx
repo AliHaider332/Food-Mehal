@@ -1,28 +1,34 @@
 // Components/Favorite/CustomerFavoriteGrid.jsx
 import React from 'react';
 import CustomerFavoriteItemCard from './CustomerFavoriteItemCard';
+import useCart from '../../../hooks/useCart';
+import { useSelector } from 'react-redux';
 
 const CustomerFavoriteGrid = ({
   items,
-  cartQuantities,
-  isInCartMap,
-  removingId,
   addingToCartId,
   onRemove,
   onAddToCart,
   onUpdateQuantity,
 }) => {
+  const { getItemQuantity, isInCart } = useCart();
+  const favIds = useSelector((state) => state.auth.user.favorite);
+  // console.log(favIds);
+
+  const favoriteItems = items.filter((item) => favIds.includes(item._id));
+  // console.log(favoriteItems);
+  
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {items.map((item) => (
+      {favoriteItems.map((item) => (
         <CustomerFavoriteItemCard
           key={item._id}
           item={item}
-          cartQuantity={cartQuantities[item._id] || 0}
-          isInCart={isInCartMap[item._id] || false}
-          isRemoving={removingId === item._id}
-          isAddingToCart={addingToCartId === item._id}
+          cartQuantity={getItemQuantity(item._id) || 0}
+          isInCart={isInCart(item._id) || false}
           onRemove={onRemove}
+          isAddingToCart={addingToCartId === item._id}
           onAddToCart={onAddToCart}
           onUpdateQuantity={onUpdateQuantity}
         />

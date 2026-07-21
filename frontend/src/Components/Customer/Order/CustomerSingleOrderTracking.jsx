@@ -1,33 +1,15 @@
-import React, { memo, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import DynamicTrackingMap from '../../DynamicTrackingMap';
+import React, { memo, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { FaMapMarkerAlt, FaStore, FaRoute, FaMotorcycle } from 'react-icons/fa';
-import { getSocket } from '../../../Config/socket';
-import { setDeliveryBoyLocation } from '../../../Store/user/user.item.slice';
-const CustomerSingleOrderTracking = memo(({ setShowTracking, order }) => {
+
+import DeliverySideOrderTracking from '../../DeliverySideOrderTracking';
+const CustomerSingleOrderTracking = ({ setShowTracking, order }) => {
   const [trackingStats, setTrackingStats] = useState(null);
-  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const shopLocation = order.shop?.location;
   const deliveryLocation = user?.location;
-  const deliveryBoyLocation = order.deliveryLocation;
-  console.log('hi', setShowTracking, order);
+  const deliveryBoyLocation = order.deliveryBoy.location;
 
-  useEffect(() => {
-    const socket = getSocket();
-    const handleLiveLocation = (data) => {
-      console.log('jfjs');
-
-      if (data.orderId !== order._id) return;
-      dispatch(
-        setDeliveryBoyLocation({ orderId: order._id, location: data.location })
-      );
-    };
-    socket.on('receive-live-location', handleLiveLocation);
-    return () => {
-      socket.off('receive-live-location', handleLiveLocation);
-    };
-  }, [dispatch, order._id]);
   return (
     <div className="border-b border-gray-200">
       <div className="relative">
@@ -47,7 +29,7 @@ const CustomerSingleOrderTracking = memo(({ setShowTracking, order }) => {
 
         {/* Map Container */}
         <div className="p-4" style={{ height: '450px' }}>
-          <DynamicTrackingMap
+          <DeliverySideOrderTracking
             shopLocation={shopLocation}
             deliveryLocation={deliveryLocation}
             deliveryBoyLocation={deliveryBoyLocation}
@@ -64,9 +46,7 @@ const CustomerSingleOrderTracking = memo(({ setShowTracking, order }) => {
               <FaStore className="text-blue-500 text-sm" />
               <p className="text-xs font-medium text-gray-500">RESTAURANT</p>
             </div>
-            <p className="text-sm font-semibold text-gray-800 truncate">
-              {order.shop?.name}
-            </p>
+            <p className="text-sm font-semibold text-gray-800 truncate">{order.shop?.name}</p>
             <p className="text-xs text-gray-400 mt-1">Ready to serve you</p>
           </div>
 
@@ -74,17 +54,12 @@ const CustomerSingleOrderTracking = memo(({ setShowTracking, order }) => {
             <div className="bg-orange-50 rounded-lg p-3 shadow-sm border border-orange-200">
               <div className="flex items-center gap-2 mb-1">
                 <FaMotorcycle className="text-orange-500 text-sm" />
-                <p className="text-xs font-medium text-orange-600">
-                  DELIVERY PARTNER
-                </p>
+                <p className="text-xs font-medium text-orange-600">DELIVERY PARTNER</p>
               </div>
-              <p className="text-sm font-semibold text-gray-800">
-                On the way to you
-              </p>
+              <p className="text-sm font-semibold text-gray-800">On the way to you</p>
               {trackingStats && (
                 <p className="text-xs text-orange-600 mt-1">
-                  {trackingStats.distance} km away • {trackingStats.duration}{' '}
-                  min ETA
+                  {trackingStats.distance} km away • {trackingStats.duration} min ETA
                 </p>
               )}
             </div>
@@ -95,15 +70,13 @@ const CustomerSingleOrderTracking = memo(({ setShowTracking, order }) => {
               <FaMapMarkerAlt className="text-green-500 text-sm" />
               <p className="text-xs font-medium text-gray-500">YOUR LOCATION</p>
             </div>
-            <p className="text-sm font-semibold text-gray-800">
-              {user?.location.address}
-            </p>
+            <p className="text-sm font-semibold text-gray-800">{user?.location.address}</p>
             <p className="text-xs text-gray-400 mt-1">Ready for delivery</p>
           </div>
         </div>
       </div>
     </div>
   );
-});
+};
 
 export default CustomerSingleOrderTracking;

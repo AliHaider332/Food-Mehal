@@ -5,115 +5,8 @@ import { item } from '../Models/item.model.js';
 import { order } from '../Models/order.model.js';
 import { getArraySocketId, getSocketId, io } from '../Config/socket.js';
 import { user } from '../Models/user.model.js';
-import mongoose from 'mongoose';
-export const getShop = asyncHandler(async (req, res) => {
-  const { _id } = req.user;
-  const requiredShop = await shop.findOne({ owner: _id }).populate({
-    path: 'reviews',
-    populate: {
-      path: 'user',
-    },
-  });
-  if (!requiredShop) {
-    res.status(203).json({
-      success: false,
-      message: 'Register your shop',
-    });
-  }
-  const shopId = requiredShop._id;
-  const totalOrders = await order.countDocuments({ shop: shopId });
-  const totalItems = await item.countDocuments({ shop: shopId });
-  const myOrder = await order
-    .find({ shop: shopId })
-    .populate('deliveryBoy')
-    .populate('reviews')
-    .limit(10);
-  const shopResponse = {
-    ...requiredShop.toObject(),
-    totalOrders,
-    totalItems,
-  };
-
-  res.status(200).json({
-    success: true,
-    message: 'Shop Successfully Updated',
-    shop: shopResponse,
-    order: myOrder,
-  });
-});
-
-export const getShopLiveOrders = asyncHandler(async (req, res) => {
-  const { _id } = req.user;
-
-  const requiredShop = await shop.findOne({ owner: _id });
-  if (!requiredShop) {
-    return res.status(203).json({
-      success: false,
-      message: 'Register your shop',
-    });
-  }
-
-  const shopId = requiredShop._id;
-  const myOrder = await order
-    .find({
-      shop: shopId,
-      status: { $nin: ['cancelled', 'delivered'] },
-    })
-    .populate('deliveryBoy')
-    .populate('reviews')
-    .sort({ createdAt: -1 }); // Sort by newest first
-
-  res.status(200).json({
-    success: true,
-    message: 'Live orders fetched successfully',
-    order: myOrder,
-  });
-});
-export const getShopCancelledOrders = asyncHandler(async (req, res) => {
-  const { _id } = req.user;
-  const requiredShop = await shop.findOne({ owner: _id });
-  if (!requiredShop) {
-    res.status(203).json({
-      success: false,
-      message: 'Register your shop',
-    });
-  }
-  const shopId = requiredShop._id;
-  const myOrder = await order
-    .find({ shop: shopId, status: 'cancelled' })
-    .populate('deliveryBoy')
-    .populate('reviews')
-    .sort({ createdAt: -1 });
-
-  res.status(200).json({
-    success: true,
-    message: 'Shop Successfully Updated',
-    order: myOrder,
-  });
-});
-export const getShopDeliveredOrders = asyncHandler(async (req, res) => {
-  const { _id } = req.user;
-  const requiredShop = await shop.findOne({ owner: _id });
-  if (!requiredShop) {
-    res.status(203).json({
-      success: false,
-      message: 'Register your shop',
-    });
-  }
-  const shopId = requiredShop._id;
-  const myOrder = await order
-    .find({ shop: shopId, status: 'delivered' })
-    .populate('deliveryBoy')
-    .populate('reviews')
-    .sort({ createdAt: -1 });
-
-  res.status(200).json({
-    success: true,
-    message: 'Shop Successfully Updated',
-    order: myOrder,
-  });
-});
-
+import { embedding } from '../Services/vectorEmbedder.js';
+//Shop creation and update
 export const createUpdateShop = asyncHandler(async (req, res) => {
   const { _id: ownerId } = req.user;
   const data = req.data;
@@ -153,23 +46,44 @@ export const createUpdateShop = asyncHandler(async (req, res) => {
   });
 });
 
-export const getItems = asyncHandler(async (req, res) => {
+//get shop info
+export const getShop = asyncHandler(async (req, res) => {
   const { _id } = req.user;
-
-  const requiredShop = await shop.findOne({ owner: _id });
-
+  const requiredShop = await shop.findOne({ owner: _id }).populate({
+    path: 'reviews',
+    populate: {
+      path: 'user',
+    },
+  });
   if (!requiredShop) {
-    throw new CustomError('No shop registered', 404);
+    res.status(203).json({
+      success: false,
+      message: 'Register your shop',
+    });
   }
-
-  const items = await item.find({ shop: requiredShop._id });
+  const shopId = requiredShop._id;
+  const totalOrders = await order.countDocuments({ shop: shopId });
+  const totalItems = await item.countDocuments({ shop: shopId });
+  const myOrder = await order
+    .find({ shop: shopId })
+    .populate('deliveryBoy')
+    .populate('reviews')
+    .limit(10);
+  const shopResponse = {
+    ...requiredShop.toObject(),
+    totalOrders,
+    totalItems,
+  };
 
   res.status(200).json({
     success: true,
-    items: items,
+    message: 'Shop Successfully Updated',
+    shop: shopResponse,
+    order: myOrder,
   });
 });
 
+// Adding item on shop
 export const createItem = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   const { name, price, description, category, isAvailable, discount } =
@@ -182,24 +96,32 @@ export const createItem = asyncHandler(async (req, res) => {
   if (!requiredShop) {
     throw new CustomError('No shop registered', 404);
   }
+  const textForEmbedding = `
+  Name: ${name}
+  Category: ${category}
+  Description: ${description}
+  `;
+  const vector = await embedding(textForEmbedding);
 
-  await item.create({
+  const newItem = await item.create({
     shop: requiredShop._id,
     name,
     price,
     description,
     category,
     picture,
+    embedding: vector,
     isAvailable,
     discount,
   });
+
 
   res.status(201).json({
     success: true,
     message: 'Item successfully added',
   });
 });
-
+// Updating item
 export const updateItem = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name, price, description, category, isAvailable, discount } =
@@ -230,6 +152,25 @@ export const updateItem = asyncHandler(async (req, res) => {
   });
 });
 
+//Geting items
+export const getItems = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+
+  const requiredShop = await shop.findOne({ owner: _id });
+
+  if (!requiredShop) {
+    throw new CustomError('No shop registered', 404);
+  }
+
+  const items = await item.find({ shop: requiredShop._id });
+
+  res.status(200).json({
+    success: true,
+    items: items,
+  });
+});
+
+// deleting items
 export const deleteItem = asyncHandler(async (req, res) => {
   const { id } = req.params;
   if (!id) {
@@ -247,6 +188,84 @@ export const deleteItem = asyncHandler(async (req, res) => {
   });
 });
 
+// Live Orders
+export const getShopLiveOrders = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+
+  const requiredShop = await shop.findOne({ owner: _id });
+  if (!requiredShop) {
+    return res.status(203).json({
+      success: false,
+      message: 'Register your shop',
+    });
+  }
+
+  const shopId = requiredShop._id;
+  const myOrder = await order
+    .find({
+      shop: shopId,
+      status: { $nin: ['cancelled', 'delivered'] },
+    })
+    .populate('deliveryBoy')
+    .populate('reviews')
+    .sort({ createdAt: -1 }); // Sort by newest first
+
+  res.status(200).json({
+    success: true,
+    message: 'Live orders fetched successfully',
+    order: myOrder,
+  });
+});
+
+// Cancelled Orders
+export const getShopCancelledOrders = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const requiredShop = await shop.findOne({ owner: _id });
+  if (!requiredShop) {
+    res.status(203).json({
+      success: false,
+      message: 'Register your shop',
+    });
+  }
+  const shopId = requiredShop._id;
+  const myOrder = await order
+    .find({ shop: shopId, status: 'cancelled' })
+    .populate('deliveryBoy')
+    .populate('reviews')
+    .sort({ createdAt: -1 });
+
+  res.status(200).json({
+    success: true,
+    message: 'Shop Successfully Updated',
+    order: myOrder,
+  });
+});
+
+// Successfully Delivered orders
+export const getShopDeliveredOrders = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const requiredShop = await shop.findOne({ owner: _id });
+  if (!requiredShop) {
+    res.status(203).json({
+      success: false,
+      message: 'Register your shop',
+    });
+  }
+  const shopId = requiredShop._id;
+  const myOrder = await order
+    .find({ shop: shopId, status: 'delivered' })
+    .populate('deliveryBoy')
+    .populate('reviews')
+    .sort({ createdAt: -1 });
+
+  res.status(200).json({
+    success: true,
+    message: 'Shop Successfully Updated',
+    order: myOrder,
+  });
+});
+
+// Updating Orders
 export const updateOrder = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -256,7 +275,7 @@ export const updateOrder = asyncHandler(async (req, res) => {
     throw new CustomError(400, 'Data is missing');
   }
 
-  const orderDoc = await order.findById(id).populate("shop");
+  const orderDoc = await order.findById(id).populate('shop');
 
   if (!orderDoc) {
     throw new CustomError(404, 'Order not found');
@@ -273,10 +292,8 @@ export const updateOrder = asyncHandler(async (req, res) => {
   }
 
   if (updatedOrder.status === 'packed') {
-    
     const [lng, lat] = updatedOrder?.shop.location.coordinates;
-    c
-    
+
     const orderStatus = ['delivery-accepted', 'picked'];
     const nearShops = await user.find({
       status: { $nin: orderStatus },
@@ -306,6 +323,7 @@ export const updateOrder = asyncHandler(async (req, res) => {
   });
 });
 
+// Shop analytics
 export const getAnalytics = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   const requiredShop = await shop.findOne({ owner: _id });

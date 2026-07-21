@@ -17,4 +17,8 @@ export const ENV = {
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
   COOKIE_EXPIRE_IN: process.env.COOKIE_EXPIRE_IN,
   JWT_EXPIRE_IN: process.env.JWT_EXPIRE_IN,
+  NEO4J_URI: process.env.NEO4J_URI,
+  NEO4J_USER: process.env.NEO4J_USER,
+  NEO4J_PASSWORD: process.env.NEO4J_PASSWORD,
+  
 };

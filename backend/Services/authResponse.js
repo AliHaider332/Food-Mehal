@@ -22,6 +22,10 @@ export const sendAuthResponse = async (res, authUser, message, statusCode = 200)
     address: authUser.address,
     createdAt: authUser.createdAt,
   };
+  if (authUser.role === 'customer') {
+    userResponse.cart = authUser.cart || [];
+    userResponse.favorite = authUser.favorite || [];
+  }
 
   return res.status(statusCode).json({
     success: true,

@@ -5,6 +5,7 @@ import { GiForkKnifeSpoon } from 'react-icons/gi';
 const HomeSliderState = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showArrows, setShowArrows] = useState(false);
+  
   // Slider Functions
   const sliderImages = [
     {

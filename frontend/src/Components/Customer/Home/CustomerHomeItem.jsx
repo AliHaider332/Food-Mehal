@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import useCart from '../../../hooks/useCart';
 import useFavorite from '../../../hooks/useFavorite';
 import { useNavigate } from 'react-router-dom';
@@ -32,48 +32,20 @@ import {
   MdEmojiFoodBeverage,
 } from 'react-icons/md';
 import { GiTakeMyMoney, GiChickenOven } from 'react-icons/gi';
+import { getAverageRating, renderRatingStars } from '../RenderStarts';
+import CustomerFavoriteRatingStars from '../Favorite/CustomerFavoriteRatingStars';
 
 const CustomerHomeItem = ({ filteredItems }) => {
   const { addToCart, updateQuantity, getItemQuantity } = useCart();
   const { toggleFavorite, isFavorite } = useFavorite();
   const navigate = useNavigate();
 
-  const getAverageRating = (shop) => {
-    if (!shop?.reviews || shop.reviews.length === 0) return 0;
-    const total = shop.reviews.reduce((sum, review) => sum + review.rating, 0);
-    return (total / shop.reviews.length).toFixed(1);
-  };
-
-  const renderRatingStars = (rating) => {
-    const stars = [];
-    const numericRating = parseFloat(rating);
-    const fullStars = Math.floor(numericRating);
-    const hasHalfStar = numericRating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(
-        <FaStar key={`full-${i}`} className="text-yellow-400 text-sm" />
-      );
-    }
-    if (hasHalfStar) {
-      stars.push(
-        <FaStarHalfAlt key="half" className="text-yellow-400 text-sm" />
-      );
-    }
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(
-        <FaRegStar key={`empty-${i}`} className="text-yellow-300 text-sm" />
-      );
-    }
-    return stars;
-  };
-
   const getDiscountedPrice = (item) => {
+    if (!item) return 0;
     if (item.discount && item.discount > 0) {
       return item.price - (item.price * item.discount) / 100;
     }
-    return item.price;
+    return item.price || 0;
   };
 
   const getCategoryIcon = (category) => {
@@ -92,13 +64,56 @@ const CustomerHomeItem = ({ filteredItems }) => {
     return 'from-orange-400 to-orange-300';
   };
 
+  // Deduplicate items by _id
+  const uniqueItems = useMemo(() => {
+    if (
+      !filteredItems ||
+      !Array.isArray(filteredItems) ||
+      filteredItems.length === 0
+    ) {
+      return [];
+    }
+
+    // Use Map to keep only unique items by _id
+    const itemMap = new Map();
+    filteredItems.forEach((item) => {
+      if (item && item._id && !itemMap.has(item._id)) {
+        itemMap.set(item._id, item);
+      }
+    });
+
+    const unique = Array.from(itemMap.values());
+
+    // Log if duplicates were found for debugging
+    if (unique.length !== filteredItems.length) {
+      console.warn(
+        `CustomerHomeItem: Removed ${
+          filteredItems.length - unique.length
+        } duplicate items. ` +
+          `Original: ${filteredItems.length}, Unique: ${unique.length}`
+      );
+
+      // Log duplicate IDs for debugging
+      const seen = new Set();
+      const duplicates = [];
+      filteredItems.forEach((item) => {
+        if (item?._id) {
+          if (seen.has(item._id)) {
+            duplicates.push(item._id);
+          }
+          seen.add(item._id);
+        }
+      });
+      if (duplicates.length > 0) {
+        console.error('Duplicate _id values found:', [...new Set(duplicates)]);
+      }
+    }
+
+    return unique;
+  }, [filteredItems]);
+
   // Safely handle null/undefined
-  if (
-    !filteredItems ||
-    !Array.isArray(filteredItems) ||
-    filteredItems.length === 0
-  ) {
-    console.log('No items to display');
+  if (!uniqueItems || uniqueItems.length === 0) {
     return (
       <div className="mb-16">
         <div className="mb-8 text-center">
@@ -124,7 +139,7 @@ const CustomerHomeItem = ({ filteredItems }) => {
 
       {/* Items Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
-        {filteredItems.map((item, idx) => {
+        {uniqueItems.map((item, idx) => {
           // Add error handling for each item
           try {
             if (!item || !item._id) {
@@ -132,6 +147,10 @@ const CustomerHomeItem = ({ filteredItems }) => {
               return null;
             }
 
+            // Create a unique key combining _id and index as fallback
+            const uniqueKey = `${item._id}-${idx}`;
+
+            // Get quantity from cart (only ID stored)
             const quantity = getItemQuantity(item._id);
             const isFav = isFavorite(item._id);
             const discountedPrice = getDiscountedPrice(item);
@@ -141,8 +160,8 @@ const CustomerHomeItem = ({ filteredItems }) => {
 
             return (
               <div
+                key={uniqueKey}
                 onClick={() => navigate(`item/${item._id}`)}
-                key={item._id}
                 className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 cursor-pointer group animate-fade-in relative"
                 style={{ animationDelay: `${idx * 80}ms` }}
               >
@@ -178,7 +197,7 @@ const CustomerHomeItem = ({ filteredItems }) => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleFavorite(item, e);
+                      toggleFavorite(item._id);
                     }}
                     className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:scale-110 transition-transform duration-200 z-10"
                   >
@@ -289,7 +308,7 @@ const CustomerHomeItem = ({ filteredItems }) => {
                       )}
                     </div>
 
-                    {/* Quantity Controls */}
+                    {/* Quantity Controls - uses only item ID */}
                     {quantity > 0 ? (
                       <div className="flex items-center gap-2 bg-orange-50 rounded-xl p-1 shadow-inner">
                         <button
@@ -315,10 +334,11 @@ const CustomerHomeItem = ({ filteredItems }) => {
                         </button>
                       </div>
                     ) : (
+                      // Add to cart - only needs item ID
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          addToCart(item);
+                          addToCart(item._id, 1);
                         }}
                         className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:shadow-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:scale-105 flex items-center gap-2 group/btn"
                       >

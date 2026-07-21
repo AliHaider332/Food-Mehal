@@ -8,7 +8,7 @@ import {
   FaCreditCard,
   FaSpinner,
 } from 'react-icons/fa';
-import { formatPKR } from '../../../utils/cartutils';
+import { formatPKR } from '../../../utils/cartUtils';
 
 const CustomerCartConfirmationModal = ({
   orderSummary,

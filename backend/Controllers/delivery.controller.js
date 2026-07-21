@@ -87,6 +87,7 @@ export const acceptOrder = asyncHandler(async (req, res) => {
   }
   if (sellerSocketId) {
     io.to(sellerSocketId).emit('update-seller-order', {
+      status:"accept",
       order: Order,
     });
   }
@@ -149,6 +150,7 @@ export const updateStatus = asyncHandler(async (req, res) => {
   }
   if (sellerSocketId) {
     io.to(sellerSocketId).emit('update-seller-order', {
+      status,
       order: Order,
     });
   }
@@ -201,6 +203,7 @@ export const cancelOrder = asyncHandler(async (req, res) => {
     });
   } else if (socketId && role === 'customer') {
     io.to(socketId).emit('update-seller-order', {
+      status: 'cancel',
       order: updatedOrder,
     });
   }
@@ -249,7 +252,6 @@ export const reviewOrder = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Order cancelled successfully', // Fixed message text
-    order: updatedOrder,
   });
 });
 export const getDeliveredOrder = asyncHandler(async (req, res) => {

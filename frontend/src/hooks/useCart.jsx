@@ -1,169 +1,302 @@
-import { useCallback } from 'react';
+/* eslint-disable react-hooks/immutability */
+import { useCallback, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
-import { setCartItems } from '../Store/user/user.cart.item.slice';
+import { useAddToCartMutation } from '../services/customer.api';
+import {
+  addCartState,
+  manageCartQuantity,
+  removeCartState,
+  clearCartState,
+  updateCartItems,
+} from '../Store/auth/auth.slice';
 
 const useCart = () => {
   const dispatch = useDispatch();
-  const { items: cartItems, loading } = useSelector((state) => state.cart);
+  const { user } = useSelector((state) => state.auth);
+  const [addToCartMutation, { isLoading }] = useAddToCartMutation();
 
-  // Sync cart to localStorage
-  const syncLocalStorage = useCallback((cart) => {
-    const ls = {};
-    cart.forEach((item) => {
-      ls[item._id] = item.quantity;
-    });
-    localStorage.setItem('foodCart', JSON.stringify(ls));
-  }, []);
-
-  // Remove item from cart ✅ (moved up)
-  const removeFromCart = useCallback(
-    (itemId, showToast = true) => {
-      const item = cartItems.find((c) => c._id === itemId);
-      const newCart = cartItems.filter((c) => c._id !== itemId);
-
-      dispatch(setCartItems(newCart));
-      syncLocalStorage(newCart);
-
-      if (showToast && item) {
-        toast.info(`${item.name} removed from cart`);
-      }
-    },
-    [cartItems, dispatch, syncLocalStorage]
-  );
-
-  // Add item to cart
-  const addToCart = useCallback(
-    (item, quantity = 1) => {
-      if (!item) return;
-
-      const existing = cartItems.find((c) => c._id === item._id);
-      let newCart;
-
-      if (existing) {
-        newCart = cartItems.map((c) =>
-          c._id === item._id ? { ...c, quantity: c.quantity + quantity } : c
-        );
-      } else {
-        newCart = [...cartItems, { ...item, quantity }];
-      }
-
-      dispatch(setCartItems(newCart));
-      syncLocalStorage(newCart);
-    },
-    [cartItems, dispatch, syncLocalStorage]
-  );
-
-  // Update quantity (+ / -)
-  const updateQuantity = useCallback(
-    (itemId, delta, showToast = false) => {
-      const item = cartItems.find((c) => c._id === itemId);
-      if (!item) return;
-
-      const newQty = item.quantity + delta;
-
-      if (newQty <= 0) {
-        removeFromCart(itemId, showToast);
-        return;
-      }
-
-      const newCart = cartItems.map((c) =>
-        c._id === itemId ? { ...c, quantity: newQty } : c
-      );
-
-      dispatch(setCartItems(newCart));
-      syncLocalStorage(newCart);
-    },
-    [cartItems, dispatch, syncLocalStorage, removeFromCart] // ✅ fixed dependency
-  );
-
-  // Set exact quantity
-  const setQuantity = useCallback(
-    (itemId, newQuantity, showToast = false) => {
-      if (newQuantity <= 0) {
-        removeFromCart(itemId, showToast);
-        return;
-      }
-
-      const item = cartItems.find((c) => c._id === itemId);
-      if (!item) return;
-
-      const newCart = cartItems.map((c) =>
-        c._id === itemId ? { ...c, quantity: newQuantity } : c
-      );
-
-      dispatch(setCartItems(newCart));
-      syncLocalStorage(newCart);
-    },
-    [cartItems, dispatch, syncLocalStorage, removeFromCart] // ✅ added dependency
-  );
-
-  // Clear cart
-  const clearCart = useCallback(() => {
-    dispatch(setCartItems([]));
-    localStorage.removeItem('foodCart');
-  }, [dispatch]);
+  // Get cart items from user state (only IDs and quantities)
+  const cartItems = user?.cart || [];
 
   // Get item quantity
   const getItemQuantity = useCallback(
     (itemId) => {
-      const item = cartItems.find((c) => c._id === itemId);
+      if (!itemId) return 0;
+      const item = cartItems.find((c) => c.item === itemId);
       return item?.quantity || 0;
     },
     [cartItems]
   );
 
-  // Check if item exists
-  const isInCart = useCallback(
+  // Get full item details from cart (just the cart entry)
+  const getCartItem = useCallback(
     (itemId) => {
-      return cartItems.some((c) => c._id === itemId);
+      if (!itemId) return null;
+      return cartItems.find((c) => c.item === itemId) || null;
     },
     [cartItems]
   );
 
-  // Cart summary
+  // Add item to cart - only stores ID and quantity
+  const addToCart = useCallback(
+    async (itemId, quantity = 1) => {
+      // Validate inputs
+      if (!itemId) {
+        console.error('addToCart: Missing itemId');
+        return { success: false, error: 'Missing item ID' };
+      }
+
+      if (quantity <= 0) {
+        console.warn('addToCart: Quantity must be positive');
+        return { success: false, error: 'Invalid quantity' };
+      }
+
+      try {
+        // Optimistic update - store only ID and quantity
+        dispatch(addCartState({ 
+          item: itemId, 
+          quantity: quantity 
+        }));
+
+        const response = await addToCartMutation({
+          itemId,
+          quantity,
+          operation: 'increment',
+        }).unwrap();
+
+        // Update with server response (should contain updated cart with IDs and quantities)
+        if (response?.data) {
+          dispatch(updateCartItems(response.data.cart));
+        }
+
+        return { success: true, data: response };
+      } catch (error) {
+        // Rollback on error
+        dispatch(removeCartState(itemId));
+        console.error('Add to cart error:', error);
+        throw error;
+      }
+    },
+    [addToCartMutation, dispatch]
+  );
+
+  // Update quantity (+ / -)
+  const updateQuantity = useCallback(
+    async (itemId, delta) => {
+      if (!itemId) {
+        console.error('updateQuantity: Missing itemId');
+        return { success: false, error: 'Missing item ID' };
+      }
+
+      const currentQty = getItemQuantity(itemId);
+      const newQty = Math.max(0, currentQty + delta);
+
+      // Validate
+      if (newQty === currentQty) {
+        return { success: true, message: 'No change in quantity' };
+      }
+
+      // Optimistic update
+      dispatch(
+        manageCartQuantity({
+          itemId,
+          quantity: newQty,
+        })
+      );
+
+      try {
+        let response;
+
+        if (newQty <= 0) {
+          // Remove item if quantity is 0
+          response = await addToCartMutation({
+            itemId,
+            quantity: 0,
+            operation: 'delete',
+          }).unwrap();
+        } else {
+          response = await addToCartMutation({
+            itemId,
+            quantity: Math.abs(delta),
+            operation: delta > 0 ? 'increment' : 'decrement',
+          }).unwrap();
+        }
+
+        // Update with server response
+        if (response?.data) {
+          dispatch(updateCartItems(response.data.cart));
+        }
+
+        return { success: true, data: response };
+      } catch (error) {
+        // Rollback on error
+        dispatch(
+          manageCartQuantity({
+            itemId,
+            quantity: currentQty,
+          })
+        );
+        console.error('Update quantity error:', error);
+        throw error;
+      }
+    },
+    [addToCartMutation, getItemQuantity, dispatch]
+  );
+
+  // Remove item from cart
+  const removeFromCart = useCallback(
+    async (itemId) => {
+      if (!itemId) {
+        console.error('removeFromCart: Missing itemId');
+        return { success: false, error: 'Missing item ID' };
+      }
+
+      try {
+        // Optimistic update
+        dispatch(removeCartState(itemId));
+
+        const response = await addToCartMutation({
+          itemId,
+          quantity: 0,
+          operation: 'remove',
+        }).unwrap();
+
+        // Update with server response
+        if (response?.data) {
+          dispatch(updateCartItems(response.data.cart));
+        }
+
+        return { success: true, data: response };
+      } catch (error) {
+        // Rollback - add item back
+        const item = cartItems.find((c) => c.item === itemId);
+        if (item) {
+          dispatch(addCartState(item));
+        }
+        console.error('Remove from cart error:', error);
+        throw error;
+      }
+    },
+    [addToCartMutation, dispatch, cartItems]
+  );
+
+  // Clear entire cart
+  const clearCart = useCallback(async () => {
+    try {
+      if (cartItems.length === 0) {
+        return { success: true };
+      }
+  
+      dispatch(clearCartState());
+  
+      await addToCartMutation({
+        operation: 'clear',
+      }).unwrap();
+  
+      return { success: true };
+    } catch (error) {
+      console.error('Clear cart error:', error);
+      return { success: false, error: error.message };
+    }
+  }, [addToCartMutation, dispatch, cartItems]);
+
+  // Check if item exists in cart
+  const isInCart = useCallback(
+    (itemId) => {
+      if (!itemId) return false;
+      return cartItems.some((c) => c.item === itemId);
+    },
+    [cartItems]
+  );
+
+  // Get cart summary (based on IDs only, prices will be calculated with full item data)
   const getCartSummary = useCallback(() => {
-    const subtotal = cartItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
+    const totalItems = cartItems.reduce(
+      (sum, item) => sum + (item.quantity || 0),
       0
     );
 
-    const totalSavings = cartItems.reduce((sum, item) => {
+    return {
+      totalItems,
+      uniqueItems: cartItems.length,
+      itemCount: cartItems.length,
+      isEmpty: cartItems.length === 0,
+    };
+  }, [cartItems]);
+
+  // Get cart items grouped by category (needs full item data)
+  const getGroupedItems = useCallback((itemsWithDetails = []) => {
+    const groups = {};
+    itemsWithDetails.forEach((item) => {
+      const category = item.category || 'Uncategorized';
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(item);
+    });
+    return groups;
+  }, []);
+
+  // Calculate savings (needs full item data)
+  const getTotalSavings = useCallback((itemsWithDetails = []) => {
+    return itemsWithDetails.reduce((sum, item) => {
       if (item.discount && item.discount > 0) {
-        const discountedPrice = item.price - (item.price * item.discount) / 100;
-        return sum + (item.price - discountedPrice) * item.quantity;
+        const savings = ((item.price * item.discount) / 100) * (item.quantity || 0);
+        return sum + savings;
       }
       return sum;
     }, 0);
+  }, []);
 
-    const total = cartItems.reduce((sum, item) => {
-      const price = item.discount
-        ? item.price - (item.price * item.discount) / 100
-        : item.price;
-      return sum + price * item.quantity;
-    }, 0);
-
-    const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-
-    return { subtotal, totalSavings, total, totalItems };
+  // Get full cart items by merging with fetched item details
+  const getFullCartItems = useCallback((fetchedItems = []) => {
+    if (!cartItems.length || !fetchedItems.length) return [];
+    
+    // Create a map of fetched items by ID for quick lookup
+    const itemMap = new Map();
+    fetchedItems.forEach(item => {
+      if (item && item._id) {
+        itemMap.set(item._id, item);
+      }
+    });
+    
+    // Merge cart quantities with fetched item details
+    return cartItems
+      .map(cartItem => {
+        const fullItem = itemMap.get(cartItem.item);
+        if (!fullItem) return null;
+        
+        return {
+          ...fullItem,
+          quantity: cartItem.quantity,
+          // Calculate discounted price if applicable
+          discountedPrice: fullItem.discount && fullItem.discount > 0
+            ? fullItem.price - (fullItem.price * fullItem.discount) / 100
+            : fullItem.price
+        };
+      })
+      .filter(item => item !== null); // Remove items that weren't found
   }, [cartItems]);
 
   return {
     // State
-    cartItems,
-    loading,
+    cartItems, // Only contains { item: id, quantity: number }
+    isLoading,
 
     // Actions
     addToCart,
     updateQuantity,
-    setQuantity,
     removeFromCart,
     clearCart,
 
     // Helpers
-    getItemQuantity,
+    getItemQuantity, // Returns quantity for a specific item ID
+    getCartItem, // Returns the cart entry { item: id, quantity: number }
     isInCart,
-    getCartSummary,
+    getCartSummary, // Returns basic summary (counts only)
+    getGroupedItems, // Requires full item data
+    getTotalSavings, // Requires full item data
+    getFullCartItems, // Merges cart IDs with fetched item details
   };
 };
 

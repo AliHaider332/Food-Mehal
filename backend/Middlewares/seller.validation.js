@@ -10,7 +10,7 @@ const shopSchema = z.object({
   description: z
     .string()
     .min(10, 'Please provide a description')
-    .max(500, 'Description too long'),
+    .max(1500, 'Description too long'),
   phone: z
     .string()
     .min(10, 'Phone number must be at least 10 digits')
@@ -60,28 +60,57 @@ const itemSchema = z.object({
   description: z.string().max(500, 'Description is too long').optional(),
   discount: z.number().min(0, 'Discount should greater then 0'),
   category: z.enum([
-    'Pizza',
+    // Pakistani
+    'Biryani & Pulao',
+    'Karahi & Handi',
+    'Nihari & Paya',
+
+    // BBQ
+    'BBQ & Grill',
+    'Tikka & Kebabs',
+
+    // Fast Food
     'Burgers',
-    'Sushi',
-    'Pasta',
-    'Salads',
-    'Desserts',
-    'Beverages',
-    'Appetizers',
-    'Main Course',
+    'Pizza',
+    'Shawarma',
+    'Broast & Fried Chicken',
+    'Rolls & Wraps',
+
+    // Breakfast
+    'Paratha & Breakfast',
+
+    // Street Food
     'Street Food',
-    'BBQ',
-    'Seafood',
-    'Breakfast',
-    'Fast Food',
+    'Chaat & Snacks',
+
+    // International
+    'Chinese',
+    'Indian',
+    'Asian',
+    'Arabian',
+
+    // Desserts
+    'Desserts & Sweets',
+    'Ice Cream',
+    'Bakery',
+
+    // Beverages
+    'Tea & Coffee',
+    'Beverages',
+    'Juices & Shakes',
+    'Drink',
+
+    // Health
+    'Healthy Food',
+
+    // Homemade
+    'Home Made Food',
   ]),
 
   isAvailable: z.enum(['true', 'false']).optional(),
 });
 export const shopDataValidation = async (req, res, next) => {
   try {
-    
-
     if (req.body.location && typeof req.body.location === 'string') {
       req.body.location = JSON.parse(req.body.location);
     }

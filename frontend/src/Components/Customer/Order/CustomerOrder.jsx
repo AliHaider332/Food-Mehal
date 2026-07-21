@@ -7,20 +7,28 @@ import {
   FaTimes,
   FaSpinner,
 } from 'react-icons/fa';
-import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import 'leaflet/dist/leaflet.css';
 import CustomerSingleOrder from './CustomerSingleOrder';
 import CustomerOrderHeader from './CustomerOrderHeader';
 import ComponentLoading from '../../ComponentLoading';
+import { useGetOrderQuery } from '../../../services/customer.api';
+import EmptyOrder from './EmptyOrder';
 
 const CustomerOrder = () => {
   const navigate = useNavigate();
-  const { orders, loading } = useSelector((state) => state.userItems);
+  const [orders, setOrder] = useState([]);
+  const { data, isLoading: loading } = useGetOrderQuery();
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [isOpen, setIsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (data?.order) {
+      setOrder(data?.order);
+    }
+  }, [data]);
 
   const statusOptions = useMemo(
     () => [
@@ -118,33 +126,7 @@ const CustomerOrder = () => {
 
   // Empty state
   if (!orders?.length) {
-    return (
-      <div className="min-h-scree">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-          <CustomerOrderHeader totalOrders={0} />
-          <div className="bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center">
-            <div className="flex flex-col items-center max-w-md mx-auto">
-              <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-orange-100 to-amber-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                <FaShoppingCart className="text-4xl sm:text-5xl text-orange-500" />
-              </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
-                No Orders Yet
-              </h3>
-              <p className="text-gray-500 text-center mb-6">
-                Looks like you haven't placed any orders yet. Start exploring
-                restaurants and order your favorite food!
-              </p>
-              <button
-                onClick={handleBackToHome}
-                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200 font-medium"
-              >
-                Browse Restaurants
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <EmptyOrder />;
   }
 
   return (
@@ -354,7 +336,7 @@ const CustomerOrder = () => {
       </div>
 
       {/* Global Styles */}
-      <style >{`
+      <style>{`
         @keyframes slideUp {
           from {
             transform: translateY(100%);

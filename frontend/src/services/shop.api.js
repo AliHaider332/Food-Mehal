@@ -84,6 +84,58 @@ export const shopApi = createApi({
         body: { status: data.status },
       }),
       invalidatesTags: ['live-orders'],
+
+      async onQueryStarted({ id, status }, { dispatch, queryFulfilled, getState }) {
+        const state = getState();
+        const queryKey = shopApi.endpoints.getShopLiveOrders.select(undefined);
+        const queryResult = queryKey(state);
+
+        // Only update if there's cached data
+        if (queryResult.data) {
+          const patchResult = dispatch(
+            shopApi.util.updateQueryData('getShopLiveOrders', undefined, (draft) => {
+              // Handle different response structures
+              let orders = draft;
+
+              // If draft is an object with an 'order' property containing the array
+              if (draft.order && Array.isArray(draft.order)) {
+                orders = draft.order;
+              }
+              // If draft is directly the array
+              else if (Array.isArray(draft)) {
+                orders = draft;
+              }
+              // If draft has a different structure, log it
+              else {
+                console.warn('Unexpected draft structure:', draft);
+                return;
+              }
+
+              // Find and update the order
+              const orderIndex = orders.findIndex((order) => order._id === id);
+              if (orderIndex !== -1) {
+                orders[orderIndex] = {
+                  ...orders[orderIndex],
+                  status: status,
+                  updatedAt: new Date().toISOString(),
+                };
+              }
+            })
+          );
+
+          try {
+            await queryFulfilled;
+          } catch {
+            patchResult.undo();
+          }
+        } else {
+          try {
+            await queryFulfilled;
+          } catch (error) {
+            console.error('Mutation failed:', error);
+          }
+        }
+      },
     }),
     cancelShopOrder: builder.mutation({
       query: (data) => ({

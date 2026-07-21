@@ -15,6 +15,15 @@ const userSchema = new mongoose.Schema(
       enum: ['customer', 'seller', 'delivery-boy'],
       default: 'customer',
     },
+
+    favorite: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Item' }],
+    cart: [
+      {
+        item: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
+        quantity: Number,
+      },
+    ],
+
     picture: {
       type: String,
       default: null,

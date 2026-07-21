@@ -1,69 +1,34 @@
 import { useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  addFavoriteItem,
-  removeFavoriteItem,
-} from '../Store/user/user.favorite.item.slice';
+import { useSelector, useDispatch } from 'react-redux';
+import { useAddToFavoriteMutation } from '../services/customer.api';
+import { toggleFavoriteLocal } from '../Store/auth/auth.slice';
 
 const useFavorite = () => {
+  const { user } = useSelector((state) => state.auth);
+  const [addToFavorite] = useAddToFavoriteMutation();
   const dispatch = useDispatch();
-  const { items: favoriteItems } = useSelector((state) => state.favorites);
-
-  // Sync localStorage (centralized)
-  const syncLocalStorage = useCallback((favorites) => {
-    const ids = favorites.map((item) => item._id);
-    localStorage.setItem('foodFavorites', JSON.stringify(ids));
-  }, []);
 
   // Check favorite
-  const isFavorite = useCallback(
-    (itemId) => {
-      return favoriteItems.some((item) => item._id === itemId);
-    },
-    [favoriteItems]
-  );
-
+  const favoriteSet = new Set(user?.favorite || []);
+  const isFavorite = (itemId) => favoriteSet.has(itemId);
   // Toggle favorite
   const toggleFavorite = useCallback(
-    (item, e) => {
-      e?.stopPropagation();
+    async (itemId) => {
+      dispatch(toggleFavoriteLocal(itemId));
 
-      const exists = favoriteItems.find((fav) => fav._id === item._id);
-
-      let updatedFavorites;
-
-      if (exists) {
-        updatedFavorites = favoriteItems.filter((fav) => fav._id !== item._id);
-
-        dispatch(removeFavoriteItem(item._id));
-      } else {
-        updatedFavorites = [...favoriteItems, item];
-
-        dispatch(addFavoriteItem(item));
+      try {
+        await addToFavorite(itemId).unwrap();
+      } catch (error) {
+        dispatch(toggleFavoriteLocal(itemId)); // rollback
+        console.error(error);
       }
-
-      syncLocalStorage(updatedFavorites);
     },
-    [favoriteItems, dispatch, syncLocalStorage]
-  );
-
-  // Remove separately
-  const removeFromFavorites = useCallback(
-    (id, e) => {
-      e?.stopPropagation();
-
-      const updatedFavorites = favoriteItems.filter((item) => item._id !== id);
-
-      dispatch(removeFavoriteItem(id));
-      syncLocalStorage(updatedFavorites);
-    },
-    [favoriteItems, dispatch, syncLocalStorage]
+    [addToFavorite, dispatch]
   );
 
   return {
     toggleFavorite,
     isFavorite,
-    removeFromFavorites,
   };
 };
 
