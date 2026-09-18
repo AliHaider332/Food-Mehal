@@ -55,6 +55,7 @@ export const signupController = asyncHandler(async (req, res) => {
 export const signinController = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
+  
   if (!email || !password) {
     throw new CustomError(400, 'All fields are required');
   }
@@ -64,6 +65,8 @@ export const signinController = asyncHandler(async (req, res) => {
   if (!registeredUser) {
     throw new CustomError(400, 'User is not registered');
   }
+  
+  
 
   const checkPassword = await bcrypt.compare(password, registeredUser.password);
 

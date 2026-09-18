@@ -7,7 +7,7 @@ import { ENV } from '../Services/env.js';
 export const app = express();
 
 export const httpServer = http.createServer(app);
-dotenv.config();
+
 export const io = new Server(httpServer, {
   cors: {
     origin: ENV.CLIENT,

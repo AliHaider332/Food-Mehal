@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+
 export const ENV = {
   PORT: process.env.PORT,
   MONGODB: process.env.MONGODB,
@@ -15,7 +16,7 @@ export const ENV = {
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
-  COOKIE_EXPIRE_IN: process.env.COOKIE_EXPIRE_IN,
+  COOKIE_EXPIRE_IN: Number(process.env.COOKIE_EXPIRE_IN || 0),
   JWT_EXPIRE_IN: process.env.JWT_EXPIRE_IN,
   NEO4J_URI: process.env.NEO4J_URI,
   NEO4J_USER: process.env.NEO4J_USER,

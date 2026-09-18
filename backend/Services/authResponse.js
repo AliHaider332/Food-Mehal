@@ -3,13 +3,12 @@ import { generateToken } from "./JWT.js";
 
 export const sendAuthResponse = async (res, authUser, message, statusCode = 200) => {
   const token = generateToken(authUser._id.toString());
-
   res.cookie('uid', token, {
-    httpOnly: true,
-    secure: ENV.NODE_MODE === 'PRODUCTION',
-    sameSite: 'strict',
-    maxAge: Number(ENV.COOKIE_EXPIRE_IN),
-  });
+  httpOnly: true,
+  secure: ENV.NODE_MODE === 'PRODUCTION',
+  sameSite: ENV.NODE_MODE === 'PRODUCTION' ? 'none' : 'lax',
+  maxAge: Number(ENV.COOKIE_EXPIRE_IN),
+});
 
   const userResponse = {
     _id: authUser._id,

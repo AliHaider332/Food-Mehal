@@ -6,7 +6,8 @@ import CustomError from '../Services/CustomError.js';
 import { getSocketId, io } from '../Config/socket.js';
 import { user } from '../Models/user.model.js';
 import { createOrderRelations, getRecommendedItems } from '../Services/Neo4jNodeCreation.js';
-
+import { embedding } from '../Services/vectorEmbedder.js';
+import mongoose from 'mongoose';
 export const getCustomerFrontShop = asyncHandler(async (req, res) => {
   const user = req.user;
 
@@ -116,15 +117,72 @@ export const getCustomerFrontItems = asyncHandler(async (req, res) => {
 export const getSearchItems = asyncHandler(async (req, res) => {
   const { queryText } = req.body;
 
-  const items = await item
-    .find({
-      $text: { $search: queryText },
-      isAvailable: true,
-    })
-    .sort({
-      score: { $meta: 'textScore' },
-    })
-    .select({ score: { $meta: 'textScore' } });
+  if (!queryText?.trim()) {
+    throw new CustomError('Search query is required', 400);
+  }
+
+  const queryVector = await embedding(queryText);
+
+  
+
+  const items = await item.aggregate([
+    // 1. Semantic/vector search
+    {
+      $vectorSearch: {
+        index: 'item_vector_index',
+        path: 'embedding',
+        queryVector,
+        numCandidates: 100,
+        limit: 20,
+      },
+    },
+
+    // 2. Add similarity score
+    {
+      $addFields: {
+        score: {
+          $meta: 'vectorSearchScore',
+        },
+      },
+    },
+
+    // 3. Populate shop
+    {
+      $lookup: {
+        from: 'shops',
+        localField: 'shop',
+        foreignField: '_id',
+        as: 'shop',
+      },
+    },
+
+    // 4. Convert shop array → shop object
+    {
+      $unwind: {
+        path: '$shop',
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    // 5. Populate shop reviews
+    {
+      $lookup: {
+        from: 'reviews',
+        localField: 'shop.reviews',
+        foreignField: '_id',
+        as: 'shop.reviews',
+      },
+    },
+
+    // 6. Keep highest similarity first
+    {
+      $sort: {
+        score: -1,
+      },
+    },
+  ]);
+
+  
 
   res.status(200).json({
     success: true,

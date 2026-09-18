@@ -22,6 +22,7 @@ app.use(
 app.use(json());
 app.use(cookieParser());
 
+
 app.use('/api/auth', authRouter);
 app.use('/api/shop', shopRouter);
 app.use('/api/customer', userRouter);
