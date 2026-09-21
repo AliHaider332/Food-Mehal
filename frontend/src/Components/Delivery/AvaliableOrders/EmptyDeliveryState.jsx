@@ -7,12 +7,12 @@ import {
   formatDateTime,
   getOrderStatusConfig,
 } from '../../../utils/deliveryUtils';
-import OrderTimeline from './OrderTimeline';
-import OrderSummary from './OrderSummary';
-import LocationInfo from './LocationInfo';
-import ActionCard from './ActionCard';
-import PickOrderModal from './PickOrderModal';
-import MapModal from './MapModal';
+import OrderTimeline from '../LiveOrder/OrderTimeline';
+import OrderSummary from '../LiveOrder/OrderSummary';
+import LocationInfo from '../LiveOrder/LocationInfo';
+import ActionCard from '../LiveOrder/ActionCard';
+import PickOrderModal from '../LiveOrder/PickOrderModal';
+import RouteMapModal from './RouteMapModal';
 import EmptyDeliveryState from './EmptyDeliveryState';
 import DeliverySideOrderTracking from '../../DeliverySideOrderTracking';
 
@@ -139,7 +139,7 @@ const DeliveryLiveOrder = ({ order }) => {
         isLoading={apiLoading}
       />
 
-      <MapModal
+      <RouteMapModal
         isOpen={showMapModal}
         onClose={() => setShowMapModal(false)}
         shopLocation={shopLocation}
