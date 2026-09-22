@@ -1,6 +1,6 @@
 // Components/Cart/ProgressBar.jsx
 import React from 'react';
-import { formatPKR } from '../../../utils/cartutils';
+import { formatPKR } from '../../../utils/cartUtils';
 
 const CustomerCartProgressBar = ({ current, target }) => {
   const percentage = Math.min((current / target) * 100, 100);
